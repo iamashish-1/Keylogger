@@ -13,7 +13,5 @@ pip install pynput pygetwindow
 ``` bash
 python keylogger.py
 ```
-## Caveats:
-This code can easily be identified as a malicious code by the Windows Defender
 
 Disclaimer: This program is meant for educational purposes only
